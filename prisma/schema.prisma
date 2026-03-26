@@ -1,0 +1,332 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum Role {
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
+enum LeadSource {
+  META_AD
+  ORGANIC_WEB
+  TIKTOK
+  YOUTUBE
+  DM_FACEBOOK
+  DM_INSTAGRAM
+  WHATSAPP
+  REFERRAL
+  PODCAST
+  OTHER
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  CONVERTED
+  LOST
+}
+
+enum Platform {
+  FACEBOOK
+  INSTAGRAM
+  TIKTOK
+  YOUTUBE
+  BLOG
+}
+
+enum CampaignStatus {
+  ACTIVE
+  PAUSED
+  PAUSED_BY_AI
+  COMPLETED
+}
+
+enum ContentType {
+  TIP_LEGAL
+  HISTORIA_EXITO
+  NOTICIA
+  FAQ
+  PODCAST_BLOG
+  ALERTA_USCIS
+  TESTIMONIO
+  INFOGRAFIA
+  OTHER
+}
+
+enum ContentStatus {
+  DRAFT
+  REVIEW
+  SCHEDULED
+  PUBLISHED
+  FAILED
+}
+
+enum ReviewSource {
+  GOOGLE
+  YELP
+  FACEBOOK
+}
+
+enum ResponseStatus {
+  PENDING
+  APPROVED
+  PUBLISHED
+  IGNORED
+}
+
+enum CommentCategory {
+  LEGAL_QUESTION
+  POSITIVE
+  COMPLAINT
+  SPAM
+  PRICE_INQUIRY
+  OTHER
+}
+
+// ─── Models ───────────────────────────────────────────────────────────────────
+
+model User {
+  id             String     @id @default(cuid())
+  email          String     @unique
+  name           String
+  hashedPassword String?
+  role           Role       @default(EDITOR)
+  avatar         String?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  contents       Content[]
+  auditLogs      AuditLog[]
+}
+
+model Lead {
+  id              String      @id @default(cuid())
+  name            String
+  email           String?
+  phone           String?
+  source          LeadSource
+  sourceDetail    String?
+  status          LeadStatus  @default(NEW)
+  caseType        String?
+  city            String?
+  notes           String?
+  contractValue   Decimal?    @db.Decimal(10, 2)
+  reviewRequested Boolean     @default(false)
+  reviewLeft      Boolean     @default(false)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  convertedAt     DateTime?
+
+  @@index([source, status])
+  @@index([createdAt])
+  @@index([city])
+}
+
+model Campaign {
+  id               String         @id @default(cuid())
+  metaCampaignId   String         @unique
+  name             String
+  platform         Platform
+  budget           Decimal        @db.Decimal(10, 2)
+  spent            Decimal        @default(0) @db.Decimal(10, 2)
+  leadsGenerated   Int            @default(0)
+  cpl              Decimal?       @db.Decimal(10, 2)
+  status           CampaignStatus @default(ACTIVE)
+  lastRebalancedAt DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  logs             CampaignLog[]
+
+  @@index([status])
+}
+
+model CampaignLog {
+  id         String   @id @default(cuid())
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  action     String
+  details    Json
+  createdAt  DateTime @default(now())
+}
+
+model Content {
+  id          String             @id @default(cuid())
+  title       String
+  body        String
+  platform    Platform
+  contentType ContentType
+  status      ContentStatus      @default(DRAFT)
+  scheduledAt DateTime?
+  publishedAt DateTime?
+  externalId  String?
+  mediaUrl    String?
+  hashtags    String[]
+  aiGenerated Boolean            @default(false)
+  authorId    String?
+  author      User?              @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  performance ContentPerformance?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@index([platform, status])
+  @@index([scheduledAt])
+}
+
+model ContentPerformance {
+  id             String  @id @default(cuid())
+  contentId      String  @unique
+  content        Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  impressions    Int     @default(0)
+  reach          Int     @default(0)
+  engagement     Int     @default(0)
+  clicks         Int     @default(0)
+  leads          Int     @default(0)
+  shares         Int     @default(0)
+  saves          Int     @default(0)
+  comments       Int     @default(0)
+  engagementRate Decimal @default(0) @db.Decimal(5, 4)
+  updatedAt      DateTime @updatedAt
+}
+
+model ContentIdea {
+  id          String   @id @default(cuid())
+  topic       String
+  angle       String
+  hook        String
+  hashtags    String[]
+  platform    Platform
+  trendSource String
+  used        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([used, createdAt])
+}
+
+model Review {
+  id             String         @id @default(cuid())
+  source         ReviewSource
+  externalId     String?
+  rating         Int
+  text           String
+  author         String
+  officeName     String
+  responseDraft  String?
+  responseStatus ResponseStatus @default(PENDING)
+  respondedAt    DateTime?
+  createdAt      DateTime       @default(now())
+
+  @@index([source, officeName])
+  @@index([rating])
+}
+
+model DailyMetric {
+  id             String   @id @default(cuid())
+  date           DateTime @db.Date
+  platform       Platform
+  followers      Int      @default(0)
+  impressions    Int      @default(0)
+  reach          Int      @default(0)
+  clicks         Int      @default(0)
+  leads          Int      @default(0)
+  engagementRate Decimal  @default(0) @db.Decimal(5, 4)
+
+  @@unique([date, platform])
+  @@index([date])
+}
+
+model WebMetric {
+  id          String   @id @default(cuid())
+  date        DateTime @unique @db.Date
+  sessions    Int      @default(0)
+  users       Int      @default(0)
+  pageviews   Int      @default(0)
+  bounceRate  Decimal  @default(0) @db.Decimal(5, 4)
+  avgDuration Decimal  @default(0) @db.Decimal(10, 2)
+  topSource   String?
+}
+
+model WeeklyReport {
+  id          String   @id @default(cuid())
+  periodStart DateTime
+  periodEnd   DateTime
+  content     Json
+  highlights  String[]
+  createdAt   DateTime @default(now())
+}
+
+model SEOBrief {
+  id                 String   @id @default(cuid())
+  opportunities      Json
+  quickWins          Json
+  contentSuggestions Json
+  technicalIssues    Json?
+  weekOf             DateTime
+  createdAt          DateTime @default(now())
+}
+
+model Competitor {
+  id       String               @id @default(cuid())
+  name     String
+  domain   String
+  city     String
+  notes    String?
+  analyses CompetitorAnalysis[]
+}
+
+model CompetitorAnalysis {
+  id           String     @id @default(cuid())
+  competitorId String
+  competitor   Competitor @relation(fields: [competitorId], references: [id], onDelete: Cascade)
+  data         Json
+  insights     String
+  weekOf       DateTime
+  createdAt    DateTime   @default(now())
+}
+
+model AILearning {
+  id        String   @id @default(cuid())
+  category  String
+  insight   String
+  data      Json
+  appliedTo String[]
+  createdAt DateTime @default(now())
+}
+
+model Comment {
+  id              String          @id @default(cuid())
+  platform        Platform
+  externalId      String
+  postExternalId  String
+  text            String
+  author          String
+  category        CommentCategory?
+  responseDraft   String?
+  responseStatus  ResponseStatus  @default(PENDING)
+  respondedAt     DateTime?
+  createdAt       DateTime        @default(now())
+
+  @@index([responseStatus])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String
+  entity    String
+  entityId  String?
+  details   Json?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}

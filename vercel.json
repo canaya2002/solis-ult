@@ -1,0 +1,13 @@
+{
+  "crons": [
+    { "path": "/api/cron/daily-trends", "schedule": "0 12 * * *" },
+    { "path": "/api/cron/ads-rebalance", "schedule": "0 */12 * * *" },
+    { "path": "/api/cron/content-publish", "schedule": "*/5 * * * *" },
+    { "path": "/api/cron/review-request", "schedule": "0 15 * * *" },
+    { "path": "/api/cron/review-sync", "schedule": "0 14 * * *" },
+    { "path": "/api/cron/seo-brief", "schedule": "0 13 * * 1" },
+    { "path": "/api/cron/competitor-analysis", "schedule": "0 14 * * 1" },
+    { "path": "/api/cron/weekly-report", "schedule": "0 22 * * 5" },
+    { "path": "/api/cron/learning-cycle", "schedule": "0 14 1,15 * *" }
+  ]
+}
