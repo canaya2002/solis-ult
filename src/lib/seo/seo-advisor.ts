@@ -61,7 +61,7 @@ export async function generateSEOBriefFull(): Promise<SEOBriefResult> {
     opportunities: brief.opportunities.map(o => ({ keyword: o.keyword, currentPosition: o.position, volume: o.volume, difficulty: "medium", action: o.action, page: undefined })),
     quickWins: brief.quickWins.map(q => ({ page: q.page, currentTitle: q.currentTitle, suggestedTitle: q.suggestedTitle, reason: q.reason, estimatedCtrImprovement: "+15%" })),
     contentSuggestions: brief.contentSuggestions.map(c => ({ topic: c.topic, targetKeyword: c.keyword, estimatedVolume: c.estimatedVolume, difficulty: c.difficulty, outline: "" })),
-    technicalIssues: brief.technicalIssues.map(t => ({ issue: t.issue, severity: t.severity, fix: t.fix })),
+    technicalIssues: brief.technicalIssues.map(t => ({ issue: t.issue, severity: t.severity as "low" | "medium" | "high", fix: t.fix })),
     generatedAt: now,
   };
 }

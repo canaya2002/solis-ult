@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useCopyGenerator } from "@/hooks/use-copy-generator";
 import { CopyCard } from "@/components/dashboard/copy-card";
@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import { Sparkles, Loader2 } from "lucide-react";
 import { PlatformBadge } from "@/components/dashboard/platform-badge";
 
@@ -28,6 +29,14 @@ const TONES = [
 ];
 
 export default function CopyGeneratorPage() {
+  return (
+    <Suspense fallback={<div className="animate-fade-in space-y-6"><Skeleton className="h-8 w-48" /><Skeleton className="h-96 w-full" /></div>}>
+      <CopyGeneratorContent />
+    </Suspense>
+  );
+}
+
+function CopyGeneratorContent() {
   const searchParams = useSearchParams();
   const { copies, generating, generateCopies, copyToClipboard } =
     useCopyGenerator();

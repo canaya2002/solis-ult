@@ -187,7 +187,7 @@ export async function transcribeAudio(
       return empty;
     }
 
-    const file = new File([audioBuffer], "audio.mp3", { type: "audio/mpeg" });
+    const file = new File([new Uint8Array(audioBuffer)], "audio.mp3", { type: "audio/mpeg" });
 
     const response = await withRetry(() =>
       client.audio.transcriptions.create({

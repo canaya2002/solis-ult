@@ -51,6 +51,8 @@ export default function OverviewPage() {
     date: d.date.slice(5),
     meta: 0,
     organic: 0,
+    tiktok: 0,
+    youtube: 0,
     other: d.count,
   }));
 

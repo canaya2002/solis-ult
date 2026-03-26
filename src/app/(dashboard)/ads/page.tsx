@@ -46,7 +46,7 @@ export default function AdsPage() {
         acc[0] = point;
         return acc;
       },
-      [{ date: "Hoy" }] as Array<Record<string, string | number>>
+      [{ date: "Hoy" } as Record<string, string | number> & { date: string }]
     );
   const chartCampaignNames = campaigns
     .filter((c) => c.cpl !== null)

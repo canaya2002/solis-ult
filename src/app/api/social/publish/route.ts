@@ -63,10 +63,13 @@ async function publishOne(contentId: string): Promise<{
         }
         // Dynamic import to avoid loading if not needed
         const { publishVideo } = await import("@/lib/social/tiktok");
-        result = await publishVideo({
+        const tiktokResult = await publishVideo({
           videoUrl: content.mediaUrl,
           title: text.slice(0, 150),
         });
+        result = "error" in tiktokResult
+          ? tiktokResult
+          : { id: tiktokResult.publishId };
         break;
       case "YOUTUBE":
         // YouTube only updates metadata of existing videos

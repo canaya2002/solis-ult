@@ -236,7 +236,7 @@ export async function POST(request: NextRequest) {
           data: {
             campaignId: dbCampaign.id,
             action: logAction,
-            details,
+            details: details as Record<string, string | number | boolean>,
           },
         });
       }

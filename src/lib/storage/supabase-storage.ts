@@ -10,7 +10,8 @@ function getClient() {
   return createClient(url, key);
 }
 
-async function ensureBucket(client: ReturnType<typeof createClient>) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function ensureBucket(client: any) {
   const { data } = await client.storage.getBucket(BUCKET);
   if (!data) {
     await client.storage.createBucket(BUCKET, {

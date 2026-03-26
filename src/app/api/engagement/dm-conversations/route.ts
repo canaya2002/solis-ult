@@ -6,10 +6,10 @@ export async function GET() {
   try {
     // Scan Redis for active DM conversations
     const keys: string[] = [];
-    let cursor = 0;
+    let cursor: string | number = 0;
     do {
       const result = await redis.scan(cursor, { match: "dm:conversation:*", count: 100 });
-      cursor = result[0];
+      cursor = result[0] as string | number;
       keys.push(...result[1]);
     } while (cursor !== 0);
 
