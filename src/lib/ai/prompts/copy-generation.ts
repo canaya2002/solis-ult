@@ -90,6 +90,52 @@ Extrae:
 
 Retorna JSON: { "caseType": "", "city": "", "urgency": 0, "language": "", "summary": "" }`;
 
+// ─── Enhanced Prompt Builder ───────────────────────────────────────────────────
+// Injects immigration context, learning insights, and performance data into any prompt.
+
+export async function getEnhancedPrompt(
+  basePrompt: string,
+  modules: Array<"immigration" | "learning" | "performance"> = []
+): Promise<string> {
+  const parts: string[] = [basePrompt];
+
+  if (modules.includes("immigration")) {
+    try {
+      const { getImmigrationContext } = await import("@/lib/knowledge/immigration-kb");
+      const ctx = await getImmigrationContext();
+      parts.push(`\n\nCONTEXTO DE INMIGRACI\u00d3N:\n${ctx}`);
+    } catch { /* KB not available, skip */ }
+  }
+
+  if (modules.includes("learning")) {
+    try {
+      const { db } = await import("@/lib/db");
+      const insights = await db.aILearning.findMany({ orderBy: { createdAt: "desc" }, take: 5 });
+      if (insights.length > 0) {
+        parts.push(`\n\nINSIGHTS DE APRENDIZAJE:\n${insights.map(i => `- ${i.category}: ${i.insight}`).join("\n")}`);
+      }
+    } catch { /* skip */ }
+  }
+
+  if (modules.includes("performance")) {
+    try {
+      const { db } = await import("@/lib/db");
+      const topContent = await db.contentPerformance.findMany({
+        orderBy: { engagement: "desc" },
+        take: 5,
+        include: { content: { select: { title: true, platform: true } } },
+      });
+      if (topContent.length > 0) {
+        parts.push(`\n\nTOP CONTENIDO POR ENGAGEMENT:\n${topContent.map(c =>
+          `- ${c.content.title} (${c.content.platform}): ${c.engagement} likes, ${c.comments} comentarios`
+        ).join("\n")}`);
+      }
+    } catch { /* skip */ }
+  }
+
+  return parts.join("");
+}
+
 export const PODCAST_TO_BLOG_PROMPT = `Convierte esta transcripción del podcast "Uniendo Familias con Manuel Solís" en un artículo de blog profesional.
 
 Requisitos:

@@ -3,9 +3,11 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, TrendingUp } from "lucide-react";
+import { Users, TrendingUp, Brain, Loader2, Sparkles, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import toast from "react-hot-toast";
 
 interface AudienceRow {
   adSetId: string;
@@ -27,6 +29,32 @@ export default function AudiencesPage() {
   const [audiences, setAudiences] = useState<AudienceRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [planning, setPlanning] = useState(false);
+  const [clientProfile, setClientProfile] = useState<{ totalClients: number; topCities: Array<{ city: string; count: number }>; topCaseTypes: Array<{ caseType: string; count: number }>; avgContractValue: number } | null>(null);
+  const [strategy, setStrategy] = useState<{ customAudiences: Array<{ name: string; source: string; size: number; rationale: string }>; lookalikes: Array<{ name: string; ratio: number; rationale: string }>; recommendation: string } | null>(null);
+
+  const analyzeClients = async () => {
+    setAnalyzing(true);
+    try {
+      const res = await fetch("/api/ads/audiences/build", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "analyze" }) });
+      const json = await res.json();
+      if (json.success) { setClientProfile(json.data); toast.success("An\u00e1lisis completado"); }
+      else toast.error(json.error);
+    } catch { toast.error("Error"); }
+    finally { setAnalyzing(false); }
+  };
+
+  const generatePlan = async () => {
+    setPlanning(true);
+    try {
+      const res = await fetch("/api/ads/audiences/build", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "plan" }) });
+      const json = await res.json();
+      if (json.success) { setStrategy(json.data); toast.success("Plan generado"); }
+      else toast.error(json.error);
+    } catch { toast.error("Error"); }
+    finally { setPlanning(false); }
+  };
 
   useEffect(() => {
     async function load() {
@@ -66,6 +94,66 @@ export default function AudiencesPage() {
           Análisis de rendimiento por audiencia y segmentación de Meta Ads.
         </p>
       </div>
+
+      {/* AI Audience Builder */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2"><Brain className="h-4 w-4 text-gold" /> AI Audience Builder</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={analyzeClients} disabled={analyzing}>
+              {analyzing ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Users className="mr-1.5 h-3.5 w-3.5" />}
+              Analizar clientes
+            </Button>
+            <Button size="sm" className="bg-gold text-background hover:bg-gold/90" onClick={generatePlan} disabled={planning}>
+              {planning ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Sparkles className="mr-1.5 h-3.5 w-3.5" />}
+              Generar plan de audiencias con AI
+            </Button>
+          </div>
+
+          {clientProfile && (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="rounded border border-border p-2 text-xs">
+                <p className="text-muted-foreground">Clientes</p>
+                <p className="text-lg font-bold">{clientProfile.totalClients}</p>
+              </div>
+              <div className="rounded border border-border p-2 text-xs">
+                <p className="text-muted-foreground">Top ciudad</p>
+                <p className="font-medium">{clientProfile.topCities[0]?.city || "N/A"}</p>
+              </div>
+              <div className="rounded border border-border p-2 text-xs">
+                <p className="text-muted-foreground">Top caso</p>
+                <p className="font-medium">{clientProfile.topCaseTypes[0]?.caseType || "N/A"}</p>
+              </div>
+              <div className="rounded border border-border p-2 text-xs">
+                <p className="text-muted-foreground">Valor promedio</p>
+                <p className="font-medium">${clientProfile.avgContractValue.toLocaleString()}</p>
+              </div>
+            </div>
+          )}
+
+          {strategy && (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">{strategy.recommendation}</p>
+              <div className="space-y-2">
+                {strategy.customAudiences.map((a, i) => (
+                  <div key={i} className="rounded border border-border p-2 flex items-center justify-between">
+                    <div className="text-xs"><p className="font-medium">{a.name}</p><p className="text-muted-foreground">{a.rationale}</p></div>
+                    <Badge variant="outline" className="text-[10px]">Custom</Badge>
+                  </div>
+                ))}
+                {strategy.lookalikes.map((a, i) => (
+                  <div key={i} className="rounded border border-border p-2 flex items-center justify-between">
+                    <div className="text-xs"><p className="font-medium">{a.name} ({(a.ratio * 100).toFixed(0)}%)</p><p className="text-muted-foreground">{a.rationale}</p></div>
+                    <Badge variant="outline" className="text-[10px] text-gold">Lookalike</Badge>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Best audience insight */}
       {bestAudience && (

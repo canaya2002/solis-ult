@@ -27,6 +27,9 @@ async function fetchLeadData(
   caseType: string;
   city: string;
   formName: string;
+  campaignId?: string;
+  adSetId?: string;
+  adId?: string;
 } | null> {
   const token = process.env.META_ACCESS_TOKEN;
   if (!token) return null;
@@ -60,6 +63,26 @@ async function fetchLeadData(
       } catch { /* ignore */ }
     }
 
+    // Attribution: fetch campaign/ad IDs from the lead
+    let campaignId: string | undefined;
+    let adSetId: string | undefined;
+    let adId: string | undefined;
+    try {
+      const attrRes = await fetch(
+        `https://graph.facebook.com/v21.0/${leadgenId}?fields=campaign_id,adset_id,ad_id&access_token=${token}`
+      );
+      if (attrRes.ok) {
+        const attrData = (await attrRes.json()) as {
+          campaign_id?: string;
+          adset_id?: string;
+          ad_id?: string;
+        };
+        campaignId = attrData.campaign_id;
+        adSetId = attrData.adset_id;
+        adId = attrData.ad_id;
+      }
+    } catch { /* attribution is best-effort */ }
+
     return {
       name:
         get("full_name") ||
@@ -70,6 +93,9 @@ async function fetchLeadData(
       caseType: get("case") || get("tipo") || get("servicio") || "",
       city: get("city") || get("ciudad") || "",
       formName,
+      campaignId,
+      adSetId,
+      adId,
     };
   } catch (e) {
     console.error("[webhook/meta] fetchLeadData failed:", e);
@@ -145,7 +171,7 @@ export async function POST(request: NextRequest) {
           await redis.set(dedupeKey, "1", { ex: 86400 });
         }
 
-        // Save to DB
+        // Save to DB (with attribution data for ROI tracking)
         const lead = await db.lead.create({
           data: {
             name: leadData.name,
@@ -156,6 +182,9 @@ export async function POST(request: NextRequest) {
             status: "NEW",
             caseType: leadData.caseType || null,
             city: leadData.city || null,
+            metaCampaignId: leadData.campaignId || null,
+            metaAdSetId: leadData.adSetId || null,
+            metaAdId: leadData.adId || null,
           },
         });
 

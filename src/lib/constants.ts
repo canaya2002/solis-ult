@@ -24,6 +24,10 @@ import {
   ClipboardList,
   DollarSign,
   Settings,
+  Sparkles,
+  Zap,
+  FlaskConical,
+  Upload,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -119,6 +123,7 @@ export const NAV_ITEMS: NavItem[] = [
       { label: "Crear", href: "/content/create", icon: Wand2 },
       { label: "Calendario", href: "/content/scheduler", icon: Calendar },
       { label: "Podcast", href: "/content/podcast", icon: Mic },
+      { label: "Batch upload", href: "/content/batch", icon: Upload },
     ],
   },
   {
@@ -129,6 +134,9 @@ export const NAV_ITEMS: NavItem[] = [
     items: [
       { label: "Dashboard", href: "/ads", icon: PieChart },
       { label: "Campañas", href: "/ads/campaigns", icon: Target },
+      { label: "Crear campaña", href: "/ads/create", icon: Sparkles },
+      { label: "Boosts", href: "/ads/boosts", icon: Zap },
+      { label: "A/B Tests", href: "/ads/ab-tests", icon: FlaskConical },
       { label: "Audiencias", href: "/ads/audiences", icon: Users },
     ],
   },

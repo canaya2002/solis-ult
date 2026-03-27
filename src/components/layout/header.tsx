@@ -2,6 +2,7 @@
 
 import { useSession, signOut } from "next-auth/react";
 import { Menu, LogOut } from "lucide-react";
+import { NotificationBell } from "@/components/dashboard/notification-bell";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -35,6 +36,7 @@ export function Header({ onMenuToggle }: HeaderProps) {
       </div>
 
       <div className="flex items-center gap-3">
+        <NotificationBell />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-8 w-8 rounded-full">

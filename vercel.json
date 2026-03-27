@@ -8,6 +8,9 @@
     { "path": "/api/cron/seo-brief", "schedule": "0 13 * * 1" },
     { "path": "/api/cron/competitor-analysis", "schedule": "0 14 * * 1" },
     { "path": "/api/cron/weekly-report", "schedule": "0 22 * * 5" },
-    { "path": "/api/cron/learning-cycle", "schedule": "0 14 1,15 * *" }
+    { "path": "/api/cron/learning-cycle", "schedule": "0 14 1,15 * *" },
+    { "path": "/api/cron/notifications", "schedule": "*/30 * * * *" },
+    { "path": "/api/cron/boost-monitor", "schedule": "0 * * * *" },
+    { "path": "/api/cron/ab-test-analyzer", "schedule": "0 */6 * * *" }
   ]
 }

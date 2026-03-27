@@ -94,19 +94,59 @@ enum CommentCategory {
   OTHER
 }
 
+enum NotificationStatus {
+  PENDING
+  SEEN
+  ACTED
+  EXPIRED
+  DISMISSED
+}
+
+enum PlanStatus {
+  PENDING_APPROVAL
+  APPROVED
+  ACTIVATED
+  REJECTED
+  EXPIRED
+}
+
+enum BoostStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum ABTestStatus {
+  PENDING
+  APPROVED
+  RUNNING
+  ANALYZING
+  COMPLETED
+  CANCELLED
+}
+
+enum ContentBatchStatus {
+  PENDING_APPROVAL
+  PARTIALLY_APPROVED
+  APPROVED
+  SCHEDULED
+}
+
 // ─── Models ───────────────────────────────────────────────────────────────────
 
 model User {
-  id             String     @id @default(cuid())
-  email          String     @unique
+  id             String         @id @default(cuid())
+  email          String         @unique
   name           String
   hashedPassword String?
-  role           Role       @default(EDITOR)
+  role           Role           @default(EDITOR)
   avatar         String?
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
   contents       Content[]
   auditLogs      AuditLog[]
+  notifications  Notification[]
 }
 
 model Lead {
@@ -123,6 +163,9 @@ model Lead {
   contractValue   Decimal?    @db.Decimal(10, 2)
   reviewRequested Boolean     @default(false)
   reviewLeft      Boolean     @default(false)
+  metaCampaignId  String?
+  metaAdSetId     String?
+  metaAdId        String?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
   convertedAt     DateTime?
@@ -175,6 +218,7 @@ model Content {
   authorId    String?
   author      User?              @relation(fields: [authorId], references: [id], onDelete: SetNull)
   performance ContentPerformance?
+  boosts      Boost[]
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt
 
@@ -329,4 +373,127 @@ model AuditLog {
   createdAt DateTime @default(now())
 
   @@index([createdAt])
+}
+
+model Notification {
+  id           String             @id @default(cuid())
+  type         String
+  title        String
+  message      String
+  actionUrl    String
+  actionLabel  String
+  priority     String             @default("medium")
+  data         Json?
+  status       NotificationStatus @default(PENDING)
+  reminders    Int                @default(0)
+  nextRemindAt DateTime?
+  expiresAt    DateTime?
+  createdAt    DateTime           @default(now())
+  actedAt      DateTime?
+  userId       String?
+  user         User?              @relation(fields: [userId], references: [id])
+
+  @@index([status, createdAt])
+  @@index([nextRemindAt])
+}
+
+model CampaignPlan {
+  id              String     @id @default(cuid())
+  goal            String
+  plan            Json
+  estimatedCPL    Decimal?   @db.Decimal(10, 2)
+  estimatedLeads  Int?
+  dailyBudget     Decimal    @db.Decimal(10, 2)
+  status          PlanStatus @default(PENDING_APPROVAL)
+  metaCampaignId  String?
+  notificationId  String?
+  createdAt       DateTime   @default(now())
+  approvedAt      DateTime?
+  activatedAt     DateTime?
+  rejectedAt      DateTime?
+  expiresAt       DateTime
+
+  @@index([status])
+}
+
+model Boost {
+  id              String      @id @default(cuid())
+  contentId       String
+  content         Content     @relation(fields: [contentId], references: [id])
+  platform        Platform
+  externalPostId  String
+  metaCampaignId  String?
+  metaAdId        String?
+  viralityScore   Decimal     @db.Decimal(5, 2)
+  budget          Decimal     @db.Decimal(10, 2)
+  duration        Int
+  spent           Decimal     @default(0) @db.Decimal(10, 2)
+  additionalReach Int         @default(0)
+  additionalLeads Int         @default(0)
+  status          BoostStatus @default(PENDING)
+  notificationId  String?
+  approvedAt      DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime    @default(now())
+
+  @@index([status])
+  @@index([contentId])
+}
+
+model ABTest {
+  id             String       @id @default(cuid())
+  name           String
+  variants       Json
+  dailyBudget    Decimal      @db.Decimal(10, 2)
+  testDuration   Int
+  metaCampaignId String?
+  status         ABTestStatus @default(PENDING)
+  winnerId       String?
+  results        Json?
+  createdAt      DateTime     @default(now())
+  startedAt      DateTime?
+  completedAt    DateTime?
+
+  @@index([status])
+}
+
+model KnowledgeBase {
+  id        String   @id @default(cuid())
+  category  String
+  key       String
+  value     String   @db.Text
+  updatedAt DateTime @updatedAt
+
+  @@unique([category, key])
+  @@index([category])
+}
+
+model ApprovalHistory {
+  id         String   @id @default(cuid())
+  type       String
+  content    String   @db.Text
+  approved   Boolean
+  approvedBy String?
+  createdAt  DateTime @default(now())
+
+  @@index([type, approved])
+}
+
+model ContentBatch {
+  id        String             @id @default(cuid())
+  items     Json
+  status    ContentBatchStatus @default(PENDING_APPROVAL)
+  createdAt DateTime           @default(now())
+  approvedAt DateTime?
+
+  @@index([status])
+}
+
+model WeeklyStrategy {
+  id      String   @id @default(cuid())
+  weekOf  DateTime
+  summary String   @db.Text
+  actions Json
+  metrics Json?
+  createdAt DateTime @default(now())
 }
